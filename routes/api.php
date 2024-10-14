@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\API\AddressController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\FeedController;
 use App\Http\Controllers\API\ProviderDetailController;
+use App\Http\Controllers\API\RatingController;
+use App\Http\Controllers\API\ServiceController;
 use App\Http\Controllers\API\UserProfileController;
 use App\Http\Controllers\SimpleController;
 use Illuminate\Http\Request;
@@ -12,6 +15,18 @@ Route::get('verify-email/{token}', [SimpleController::class, 'verifyEmail']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Serivices
+
+    Route::get('services', [ServiceController::class, 'getAllServices']);
+
+    Route::post('provider/add-service', [ServiceController::class, 'addServiceToProvider']);
+    Route::post('provider/add-service-media', action: [ServiceController::class, 'addServiceMedia']);
+    Route::post('provider/add-service-time', action: [ServiceController::class, 'addServiceTiming']);
+    Route::post('provider/rate-service', action: [RatingController::class, 'rateService']);
+
+
+
+
     // User details route
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -28,6 +43,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/addresses', [AddressController::class, 'getAddresses']);
 
 });
+
+Route::get('feeds', action: [FeedController::class, 'randomFeeds']);
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('register', 'register');
