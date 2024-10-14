@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Mail\VerificationEmail;
 use App\Models\User;
 use Auth;
+use Illuminate\Support\Facades\Mail;
 use Validator;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 
 class AuthController extends BaseController
 {
@@ -21,7 +24,7 @@ class AuthController extends BaseController
             $user = Auth::user();
             $success['token'] = $user->createToken('MyApp')->plainTextToken;
             $success['name'] = $user->name;
-
+            $success['user'] = $user;
             return $this->sendResponse($success, 'User login successfully.');
         } else {
             return $this->sendError('Unauthorised.', ['error' => 'Unauthorised']);
@@ -40,6 +43,7 @@ class AuthController extends BaseController
             'email' => 'required|email',
             'password' => 'required',
             'c_password' => 'required|same:password',
+            'role'=>'required'
         ]);
 
         if ($validator->fails()) {
@@ -53,7 +57,11 @@ class AuthController extends BaseController
         }
         try {
             $input['password'] = bcrypt($input['password']);
+            $input['verification_token'] = Str::random(60); // Generate a random verification token
             $user = User::create($input);
+            \Log::info($user);
+            $emailSent = Mail::to($user->email)->send(new VerificationEmail($user));
+            \Log::info('Email Sent');
             $success['token'] = $user->createToken('MyApp')->plainTextToken;
             $success['name'] = $user->name;
 

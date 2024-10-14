@@ -40,7 +40,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -57,6 +57,15 @@ return [
             'throw' => false,
         ],
 
+       'do' => [
+        'driver' => 's3',
+        'key' => env('DO_ACCESS_KEY_ID'),  // Your access key
+        'secret' => env('DO_SECRET_ACCESS_KEY'),  // Your secret key
+        'endpoint' => env('DO_ENDPOINT'),  // e.g., https://nyc3.digitaloceanspaces.com
+        'region' => env('DO_DEFAULT_REGION'),  // e.g., nyc3
+        'bucket' => env('DO_BUCKET'),  // Your Space name
+        'url' => env('DO_URL'),  // Optional, can specify the full URL if needed
+    ],
     ],
 
     /*

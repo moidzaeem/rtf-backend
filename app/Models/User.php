@@ -23,7 +23,10 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'phone_no'
+        'phone_no',
+        'verification_token',
+        'is_verified',
+        'profile_image'
     ];
 
     /**
@@ -47,5 +50,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
     }
 }
