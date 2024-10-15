@@ -26,3 +26,9 @@ Route::get('migrate', function () {
 
     dd("Migration done");
 });
+
+Route::get('migrate-fresh', function () {
+
+    \Artisan::call('migrate:fresh --seed');
+      dd("Migration done");
+  });

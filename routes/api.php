@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\API\AddressController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\BookingController;
 use App\Http\Controllers\API\FeedController;
+use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ProviderDetailController;
 use App\Http\Controllers\API\RatingController;
 use App\Http\Controllers\API\ServiceController;
@@ -22,9 +24,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('provider/add-service', [ServiceController::class, 'addServiceToProvider']);
     Route::post('provider/add-service-media', action: [ServiceController::class, 'addServiceMedia']);
     Route::post('provider/add-service-time', action: [ServiceController::class, 'addServiceTiming']);
+
+    // rate-service
     Route::post('provider/rate-service', action: [RatingController::class, 'rateService']);
 
+    // add -product
 
+    Route::post('provider/add-product', [ProductController::class, 'addProductToProviderService']);
+    Route::get('/get-products', [ProductController::class, 'getServiceProviderProducts']);
+
+    //BOOKing
+    Route::post('booking', [BookingController::class, 'booking']);
+    Route::get('bookings', [BookingController::class, 'getUserBookings']);
 
 
     // User details route
