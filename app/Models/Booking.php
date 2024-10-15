@@ -11,9 +11,14 @@ class Booking extends Model
 
     protected $guarded = [];
 
-     // Define the relationship with products (assuming many-to-many)
-     public function products()
-     {
-         return $this->belongsToMany(Product::class)->withPivot('quantity');
-     }
+    // Define the relationship with products (assuming many-to-many)
+    public function products()
+    {
+        return $this->belongsToMany(Product::class)->withPivot('quantity');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

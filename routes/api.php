@@ -4,6 +4,7 @@ use App\Http\Controllers\API\AddressController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BookingController;
 use App\Http\Controllers\API\FeedController;
+use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ProviderDetailController;
 use App\Http\Controllers\API\RatingController;
@@ -36,6 +37,17 @@ Route::middleware('auth:sanctum')->group(function () {
     //BOOKing
     Route::post('booking', [BookingController::class, 'booking']);
     Route::get('bookings', [BookingController::class, 'getUserBookings']);
+
+    //Payment Methods
+    Route::post('payment-method', [PaymentController::class, 'createPaymentMethod']);
+    Route::get('payment-methods', [PaymentController::class, 'getUserPaymentMethods']);
+
+
+    // Payment
+    Route::post('/payment', [PaymentController::class, 'chargeUser']);
+    Route::get('payments-history', [PaymentController::class, 'getUserPaymentHistory']);
+
+
 
 
     // User details route

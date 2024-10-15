@@ -10,7 +10,8 @@ use Validator;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
-
+use Stripe\Stripe;
+use Stripe\Customer;
 class AuthController extends BaseController
 {
     /**
@@ -43,7 +44,7 @@ class AuthController extends BaseController
             'email' => 'required|email',
             'password' => 'required',
             'c_password' => 'required|same:password',
-            'role'=>'required'
+            'role' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -64,6 +65,16 @@ class AuthController extends BaseController
             \Log::info('Email Sent');
             $success['token'] = $user->createToken('MyApp')->plainTextToken;
             $success['name'] = $user->name;
+
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+            // Create a Stripe customer
+            $customer = Customer::create([
+                'email' => $user->email,
+            ]);
+
+            $user->stripe_customer_id = $customer->id;
+            $user->save();
+
 
             return $this->sendResponse($success, 'User register successfully.');
         } catch (\Throwable $th) {

@@ -37,7 +37,7 @@ class BookingController extends BaseController
 
         try {
             $booking = Booking::create([
-                'user_id' => \Auth::id(),
+                'user_id' => Auth::id(),
                 'provider_service_id' => $request->provider_service_id,
                 'booking_date' => $request->booking_date,
                 'booking_time' => $request->booking_time,
