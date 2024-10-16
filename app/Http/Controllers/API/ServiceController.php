@@ -76,6 +76,7 @@ class ServiceController extends BaseController
     {
         $validator = Validator::make($request->all(), [
             'provider_service_id' => 'required|exists:provider_services,id',
+            'display_image'=>'file|mimes:jpeg,png,jpg,gif,svg',
             'media' => 'required|array',
             'media.*' => 'file|mimes:jpeg,png,jpg,gif,svg,mp4,mov,avi', // Allowing video files and increasing size limit
         ]);
@@ -86,24 +87,41 @@ class ServiceController extends BaseController
 
         if ($request->hasFile('media')) {
             try {
-                $mediaPaths = []; // Array to hold the paths of uploaded media
-
-                foreach ($request->file('media') as $mediaFile) {
+                // Handle media file uploads
+                $mediaFiles = $request->file('media');
+                $mediaUrls = []; // Array to hold URLs of uploaded media
+        
+                foreach ($mediaFiles as $mediaFile) {
                     // Store the media file and set its visibility
                     $mediaPath = $mediaFile->store('rtf/providers/media', 'do');
                     Storage::disk('do')->setVisibility($mediaPath, 'public');
-
-                    // Create the ServiceMedia record
-                    $media = ServiceMedia::create([
-                        'url' => Storage::disk('do')->url($mediaPath),
+        
+                    // Create the ServiceMedia record and store URL
+                    $mediaUrls[] = Storage::disk('do')->url($mediaPath);
+                    ServiceMedia::create([
+                        'url' => end($mediaUrls), // Use the last stored URL
                         'provider_service_id' => $request->provider_service_id,
                         'user_id' => Auth::id(),
                     ]);
                 }
-
-                return $this->sendResponse($media, 'Media uploaded successfully');
+        
+                // Handle display image upload
+                $displayImageFile = $request->file('display_image'); // Assuming display_image is uploaded separately
+                if ($displayImageFile) {
+                    $displayImagePath = $displayImageFile->store('rtf/providers/media/services/dp', 'do');
+                    Storage::disk('do')->setVisibility($displayImagePath, 'public');
+        
+                    // Update provider service display image
+                    $providerService = ProviderService::find($request->provider_service_id);
+                    if ($providerService) {
+                        $providerService->display_image = Storage::disk('do')->url($displayImagePath);
+                        $providerService->save();
+                    }
+                }
+        
+                return $this->sendResponse($mediaUrls, 'Media uploaded successfully');
             } catch (\Exception $e) {
-                // Handle the error (e.g., log it or return a response)
+                // Handle the error
                 return $this->sendError('File upload error', ['message' => $e->getMessage()]);
             }
         }

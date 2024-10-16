@@ -38,8 +38,10 @@ class FeedController extends BaseController
 
                  // Calculate average rating
                 $averageRating = $media->providerService->ratings()->avg('rating');
+                $totalRatings = $media->providerService->ratings()->count();
                 return [
                     'media_id' => $media->id,
+                    'display_image'=>  $media->providerService->display_image,
                     'url' => $media->url,
                     'openingHours' => $openingHours,
                     'provider' => [
@@ -57,6 +59,7 @@ class FeedController extends BaseController
                         'description' => $media->providerService->description,
                         'price' => $media->providerService->price,
                         'average_rating' => $averageRating,
+                        'totalRatings'=>$totalRatings
 
                     ],
                     'created_at' => $media->created_at,

@@ -153,7 +153,7 @@ class PaymentController extends BaseController
                 $provider->wallet->balance += $totalAmount; // Increment wallet balance
                 $provider->wallet->save();
             }
-    
+
 
 
             PaymentLog::create([
@@ -173,31 +173,31 @@ class PaymentController extends BaseController
     }
 
     public function getUserPaymentHistory()
-{
-    try {
-        $paymentHistory = PaymentLog::where('user_id', Auth::id())
-            ->with('booking')
-            ->get()
-            ->map(function ($payment) {
-                // Decode the payment_long JSON string
-                $paymentDetails = json_decode($payment->payment_long, true);
+    {
+        try {
+            $paymentHistory = PaymentLog::where('user_id', Auth::id())
+                ->with('booking')
+                ->get()
+                ->map(function ($payment) {
+                    // Decode the payment_long JSON string
+                    $paymentDetails = json_decode($payment->payment_long, true);
 
-                return [
-                    'transaction_id' =>isset($paymentDetails['id']) ? $paymentDetails['id'] :'N/A',
-                    'amount' => isset($paymentDetails['amount']) ? $paymentDetails['amount'] / 100 : 0, // Convert from cents to dollars
-                    'currency' => 'USD', // Assuming all payments are in USD
-                    'payment_status' => $payment->booking->payment_status,
-                    'booking_id' => $payment->booking->id,
-                    'booking_date' => $payment->booking->booking_date,
-                    'booking_time' => $payment->booking->booking_time,
-                    'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
-                ];
-            });
+                    return [
+                        'transaction_id' => isset($paymentDetails['id']) ? $paymentDetails['id'] : 'N/A',
+                        'amount' => isset($paymentDetails['amount']) ? $paymentDetails['amount'] / 100 : 0, // Convert from cents to dollars
+                        'currency' => 'USD', // Assuming all payments are in USD
+                        'payment_status' => $payment->booking->payment_status,
+                        'booking_id' => $payment->booking->id,
+                        'booking_date' => $payment->booking->booking_date,
+                        'booking_time' => $payment->booking->booking_time,
+                        'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
+                    ];
+                });
 
-        return $this->sendResponse($paymentHistory, 'Payment Transaction History');
-    } catch (\Throwable $th) {
-        return $this->sendError('Server Error', $th->getMessage());
+            return $this->sendResponse($paymentHistory, 'Payment Transaction History');
+        } catch (\Throwable $th) {
+            return $this->sendError('Server Error', $th->getMessage());
+        }
     }
-}
 
 }
