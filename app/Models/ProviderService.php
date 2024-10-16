@@ -38,4 +38,8 @@ class ProviderService extends Model
     {
         return $this->hasMany(ServiceRating::class);
     }
+
+    public function products(){
+        return $this->hasMany(Product::class);
+    }
 }

@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Provider details route
     Route::post('provider-details', [ProviderDetailController::class, 'addProvideDetails']);
+    Route::get('provider-details', [ProviderDetailController::class, 'getProviderDetails']);
     Route::post('update-profile', [UserProfileController::class, 'update']);
 
     // user addresses

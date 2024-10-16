@@ -66,4 +66,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(Wallet::class);
     }
+
+    public function providerDetails(){
+        return $this->belongsTo(ProviderDetail::class, 'id','user_id');
+    }
+
+    public function providerService(){
+        return $this->hasMany(ProviderService::class)->with(['openHours', 'ratings','products']);
+    }
 }
