@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('verify-email/{token}', [SimpleController::class, 'verifyEmail']);
 
+Route::post('google-login', [SimpleController::class, 'requestTokenGoogle']);
+
 
 Route::middleware('auth:sanctum')->group(function () {
     // Serivices
