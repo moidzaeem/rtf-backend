@@ -56,32 +56,32 @@ class BookingController extends BaseController
     }
 
     public function getUserBookings()
-{
-    $userId = Auth::id();
+    {
+        $userId = Auth::id();
 
-    try {
-        $now = now();
+        try {
+            $now = now();
 
-        // Fetch all bookings in a single query, with eager loading
-        $bookings = Booking::where('user_id', $userId)
-            ->with(['products', 'providerService'])
-            ->get();
+            // Fetch all bookings in a single query, with eager loading
+            $bookings = Booking::where('user_id', $userId)
+                ->with(['products', 'providerService'])
+                ->get();
 
-        // Split bookings into upcoming and past
-        $upcomingBookings = $bookings->where('booking_date', '>', $now);
-        $pastBookings = $bookings->where('booking_date', '<=', $now);
+            // Split bookings into upcoming and past
+            $upcomingBookings = $bookings->where('booking_date', '>', $now);
+            $pastBookings = $bookings->where('booking_date', '<=', $now);
 
-        return $this->sendResponse([
-            'upcoming' => $upcomingBookings,
-            'past' => $pastBookings,
-        ], 'User Bookings');
-    } catch (\Throwable $th) {
-        \Log::error('Error retrieving user bookings: ' . $th->getMessage(), [
-            'exception' => $th,
-        ]);
-        return $this->sendError('Could not retrieve user bookings. Please try again later.');
+            return $this->sendResponse([
+                'upcoming' => $upcomingBookings,
+                'past' => $pastBookings,
+            ], 'User Bookings');
+        } catch (\Throwable $th) {
+            \Log::error('Error retrieving user bookings: ' . $th->getMessage(), [
+                'exception' => $th,
+            ]);
+            return $this->sendError('Could not retrieve user bookings. Please try again later.');
+        }
     }
-}
 
 
 }
