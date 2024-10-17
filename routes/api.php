@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //BOOKing
     Route::post('booking', [BookingController::class, 'booking']);
     Route::get('bookings', [BookingController::class, 'getUserBookings']);
+    Route::post('cancel-booking',[BookingController::class, 'cancelBooking']);
 
     //Payment Methods
     Route::post('payment-method', [PaymentController::class, 'createPaymentMethod']);
