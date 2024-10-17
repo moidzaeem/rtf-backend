@@ -10,6 +10,7 @@ use App\Http\Controllers\API\ProviderDetailController;
 use App\Http\Controllers\API\RatingController;
 use App\Http\Controllers\API\ServiceController;
 use App\Http\Controllers\API\UserProfileController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SimpleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // user addresses
     Route::post('/addresses', [AddressController::class, 'addAddress']);
     Route::get('/addresses', [AddressController::class, 'getAddresses']);
+
+    //Notifications
+    Route::get('/user-notifications', [NotificationController::class, 'index']);
+    Route::get('/user-notifications-read-all', [NotificationController::class, 'markAllAsRead ']);
+
+    
 
 });
 

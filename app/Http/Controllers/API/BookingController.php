@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\Booking;
+use App\Models\Notification;
 use Auth;
 use Illuminate\Http\Request;
 use Validator;
@@ -48,6 +49,12 @@ class BookingController extends BaseController
                 // Assuming you have a pivot table or related model
                 $booking->products()->attach($product['product_id'], ['quantity' => $product['quantity']]);
             }
+
+            Notification::create([
+                'user_id' => Auth::id(),
+                'title' => 'Booking Created',
+                'message' => 'Your Booking is created!'
+            ]);
             return $this->sendResponse($booking, 'Successfully Booked');
 
         } catch (\Throwable $th) {

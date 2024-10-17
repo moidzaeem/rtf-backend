@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\Booking;
+use App\Models\Notification;
 use App\Models\PaymentLog;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -117,7 +118,7 @@ class PaymentController extends BaseController
             }
 
             // Fetch the booking and related products
-            $booking = Booking::with(['products', 'user'])->findOrFail($request->booking_id);
+            $booking = Booking::with(['products', 'user', 'providerService'])->findOrFail($request->booking_id);
 
             if ($booking->payment_status === 'paid') {
                 return $this->sendError('Validation Error', 'You already paid for this :)', 401);
@@ -146,7 +147,7 @@ class PaymentController extends BaseController
             $booking->payment = $totalAmount; // Store the payment amount in the booking
             $booking->save();
 
-            $provider = $booking->user; // Get the provider associated with the booking
+            $provider = $booking->providerService->user; // Get the provider associated with the booking
             if (!$provider->wallet) {
                 $provider->wallet()->create(['balance' => $totalAmount]); // Create a wallet if it doesn't exist
             } else {
@@ -161,6 +162,20 @@ class PaymentController extends BaseController
                 'booking_id' => $request->booking_id,
                 'payment_long' => json_encode($paymentIntent)
             ]);
+
+            Notification::create([
+                'user_id' => Auth::id(),
+                'title' => 'Payment Successful',
+                'message' => "Your Payment " . ($totalAmount) . " is successful"
+            ]);
+
+            Notification::create([
+                'user_id' => $booking->providerService->user_id,
+                'title' => 'Payment Successful',
+                'message' => "Your received a payment " . ($totalAmount) . " against Booking " . $request->booking_id
+            ]);
+
+
 
             return $this->sendResponse($paymentIntent, 'Payment successful.');
 
