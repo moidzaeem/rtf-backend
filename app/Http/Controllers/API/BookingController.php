@@ -50,7 +50,7 @@ class BookingController extends BaseController
                 'booking_date' => $request->booking_date,
                 'booking_time' => $request->booking_time,
                 'payment_status' => 'pending', // Set initial payment staatus
-                'payment'=>$request->payment
+                'payment' => $request->payment
             ]);
 
             BookingHistory::create([
@@ -210,6 +210,51 @@ class BookingController extends BaseController
         }
     }
 
+
+    public function receipt(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'booking_id' => 'required|exists:bookings,id',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error', $validator->errors());
+        }
+
+        try {
+            $booking = Booking::with(['products', 'providerService'])->find($request->booking_id);
+
+            $totalPrice = $booking->products->sum(function ($product) {
+                return $product->price * $product->pivot->quantity;
+            });
+
+            // Prepare the response data
+            $responseData = [
+                'id' => $booking->id,
+                'booking_date' => $booking->booking_date,
+                'booking_time' => $booking->booking_time,
+                'payment_status' => $booking->payment_status,
+                'payment' => $booking->payment,
+                'item_total' => $totalPrice,
+                'booking_status' => $booking->booking_status,
+                'display_image' => $booking->providerService->display_image,
+                'products' => $booking->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'price' => $product->price,
+                        'quantity' => $product->pivot->quantity,
+                        'image' => $product->image,
+                    ];
+                }),
+            ];
+            return $this->sendResponse($responseData, 'Booking Receipt Data');
+
+        } catch (\Throwable $th) {
+            return $this->sendError('Server Error', [$th->getMessage()]);
+        }
+
+    }
 
 
 }

@@ -52,5 +52,24 @@ class AddressController extends BaseController
             return $this->sendError('Server Error', $th->getMessage());
         }
     }
+
+    public function deleteAddress(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'address_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error.', $validator->errors());
+        }
+
+        try {
+            Address::find($request->address_id)->delete();
+            return $this->sendResponse([], 'Address deleted successfully');
+        } catch (\Throwable $th) {
+            return $this->sendError('Server Error', $th->getMessage());
+
+        }
+    }
 }
 

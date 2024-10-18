@@ -41,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('booking', [BookingController::class, 'booking']);
     Route::get('bookings', [BookingController::class, 'getUserBookings']);
     Route::post('cancel-booking',[BookingController::class, 'cancelBooking']);
-
+ 
     //Payment Methods
     Route::post('payment-method', [PaymentController::class, 'createPaymentMethod']);
     Route::get('payment-methods', [PaymentController::class, 'getUserPaymentMethods']);
@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // user addresses
     Route::post('/addresses', [AddressController::class, 'addAddress']);
     Route::get('/addresses', [AddressController::class, 'getAddresses']);
+    Route::get('delete-address', [AddressController::class, 'deleteAddress']);
 
     //Notifications
     Route::get('/user-notifications', [NotificationController::class, 'index']);
