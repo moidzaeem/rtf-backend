@@ -230,17 +230,24 @@ class PaymentController extends BaseController
                 $user->stripe_customer_id = $customer->id;
                 $user->save();
             }
-
+        
             // Create a SetupIntent
             $setupIntent = SetupIntent::create([
-                'payment_method_types' => ['card'], // You can specify other types if needed
+                'payment_method_types' => ['card'], // Specify payment method types
                 'customer' => $user->stripe_customer_id, // Attach the customer ID
             ]);
-
-            return response()->json(['client_secret' => $setupIntent->client_secret]);
+            
+            // Properly create the data array
+            $data = [
+                'client_secret' => $setupIntent->client_secret,
+            ];
+        
+            return $this->sendResponse($data, 'Client secret retrieved successfully.');
+        
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return $this->sendError('Server Error', $e->getMessage());
         }
+        
     }
 
 
