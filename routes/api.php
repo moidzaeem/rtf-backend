@@ -50,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payment
     Route::post('/payment', [PaymentController::class, 'chargeUser']);
     Route::get('payments-history', [PaymentController::class, 'getUserPaymentHistory']);
+    Route::get('/create-setup-intent', [PaymentController::class, 'createSetupIntent']);
 
 
 

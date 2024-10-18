@@ -9,7 +9,9 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Stripe\Customer;
+use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
+use Stripe\SetupIntent;
 use Stripe\Stripe;
 use Validator;
 
@@ -214,5 +216,32 @@ class PaymentController extends BaseController
             return $this->sendError('Server Error', $th->getMessage());
         }
     }
+
+    public function createSetupIntent(Request $request)
+    {
+        $user = Auth::user();
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        try {
+            if (empty($user->stripe_customer_id)) {
+                $customer = Customer::create([
+                    'email' => $user->email,
+                ]);
+                $user->stripe_customer_id = $customer->id;
+                $user->save();
+            }
+
+            // Create a SetupIntent
+            $setupIntent = SetupIntent::create([
+                'payment_method_types' => ['card'], // You can specify other types if needed
+                'customer' => $user->stripe_customer_id, // Attach the customer ID
+            ]);
+
+            return response()->json(['client_secret' => $setupIntent->client_secret]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
 
 }

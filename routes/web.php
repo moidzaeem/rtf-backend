@@ -27,6 +27,8 @@ Route::get('migrate', function () {
     dd("Migration done");
 });
 
+Route::post('webhook', [SimpleController::class, 'webhook']);
+
 Route::get('migrate-fresh', function () {
 
     \Artisan::call('migrate:fresh --seed');
