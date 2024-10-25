@@ -74,4 +74,8 @@ class User extends Authenticatable
     public function providerService(){
         return $this->hasMany(ProviderService::class)->with(['openHours', 'ratings','products']);
     }
+
+    public function providerSubscriptions (){
+        return $this->hasMany(SubscriptionProvider::class);
+    }
 }

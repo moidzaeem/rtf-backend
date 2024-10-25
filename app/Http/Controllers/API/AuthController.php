@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Mail\VerificationEmail;
+use App\Models\SubscriptionProvider;
 use App\Models\User;
 use Auth;
 use Illuminate\Support\Facades\Mail;
@@ -26,6 +27,7 @@ class AuthController extends BaseController
             $success['token'] = $user->createToken('MyApp')->plainTextToken;
             $success['name'] = $user->name;
             $success['user'] = $user;
+            $success['provider_subscriptions'] = SubscriptionProvider::where('user_id', $user->id)->get();
             return $this->sendResponse($success, 'User login successfully.');
         } else {
             return $this->sendError('Unauthorised.', ['error' => 'Unauthorised']);

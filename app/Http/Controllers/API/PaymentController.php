@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Stripe\Customer;
+use Stripe\Invoice;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 use Stripe\SetupIntent;
@@ -298,7 +299,7 @@ class PaymentController extends BaseController
         }
 
         try {
-            Stripe::setApiKey( env('STRIPE_SECRET'));
+            Stripe::setApiKey(env('STRIPE_SECRET'));
             // Detach the payment method
             $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
             $paymentMethod->detach();
@@ -313,49 +314,122 @@ class PaymentController extends BaseController
     }
 
     public function createProviderSubscriptions()
-    {
-        $user = Auth::user();
-        if ($user->role !== 'provider') {
-            return $this->sendError('Role Error', 'This is for providers only');
+{
+    $user = Auth::user();
+
+    if ($user->role !== 'provider') {
+        return $this->sendError('Role Error', 'This is for providers only');
+    }
+
+    // Check for existing subscriptions
+    $existingSubscription = SubscriptionProvider::where('user_id', $user->id)->first();
+
+    // If an active subscription exists, return an error message
+    if ($existingSubscription && $existingSubscription->status === 'active') {
+        return $this->sendError('Subscription Error', 'You already have an active subscription.');
+    }
+
+    try {
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Ensure the user has a Stripe customer ID
+        if (!$user->stripe_customer_id) {
+            $customer = Customer::create([
+                'email' => $user->email,
+            ]);
+            $user->update(['stripe_customer_id' => $customer->id]);
         }
-        try {
-            Stripe::setApiKey( env('STRIPE_SECRET'));
-            // Ensure the user has a Stripe customer ID
-            if (!$user->stripe_customer_id) {
-                $customer = Customer::create([
-                    'email' => $user->email,
-                ]);
-                $user->update(['stripe_customer_id' => $customer->id]);
+
+        // Check if there's a pending subscription
+        if ($existingSubscription && $existingSubscription->status === 'incomplete') {
+            // Retrieve the existing subscription
+            $stripeSubscription = Subscription::retrieve($existingSubscription->stripe_subscription_id, ['expand' => ['latest_invoice.payment_intent']]);
+            
+            // Check if the latest_invoice is available
+            if (isset($stripeSubscription->latest_invoice)) {
+                $latestInvoiceId = $stripeSubscription->latest_invoice; // This is an ID
+                $latestInvoice = Invoice::retrieve($latestInvoiceId, ['expand' => ['payment_intent']]);
+
+                // Check for the payment intent
+                if (isset($latestInvoice->payment_intent)) {
+                    $paymentIntent = PaymentIntent::retrieve($latestInvoice->payment_intent);
+
+                    // Check if payment method is available
+                    if (!$paymentIntent->payment_method) {
+                        return $this->sendResponse(
+                            [
+                                'payment_intent_client_secret' => $paymentIntent->client_secret,
+                            ],
+                            'No payment method available. Please add one to complete the subscription.'
+                        );
+                    }
+
+                    // Confirm the payment intent
+                    try {
+                        $paymentIntent->confirm();
+
+                        // Check the status after confirming
+                        if ($paymentIntent->status === 'succeeded') {
+                            // Update your local subscription status
+                            $existingSubscription->update(['status' => 'active']);
+                            return $this->sendResponse(
+                                [
+                                    'subscription_id' => $stripeSubscription->id,
+                                    'message' => 'Your pending payment has been processed successfully.'
+                                ],
+                                'Payment succeeded.'
+                            );
+                        } else {
+                            return $this->sendError('Payment Error', 'Payment not successful. Current status: ' . $paymentIntent->status);
+                        }
+                    } catch (\Exception $e) {
+                        return $this->sendError('Payment Confirmation Error', $e->getMessage());
+                    }
+                } else {
+                    return $this->sendError('Payment Error', 'No payment intent found for the pending subscription.');
+                }
+            } else {
+                return $this->sendError('Subscription Error', 'No latest invoice found for the subscription.');
             }
+        }
 
-            // Create a subscription in "incomplete" status without requiring payment
-            $subscription = Subscription::create([
-                'customer' => $user->stripe_customer_id,
-                'items' => [['price' => env('STRIPE_PLAN_ID')]],
-                'payment_behavior' => 'default_incomplete',
-                'expand' => ['latest_invoice.payment_intent'],
-            ]);
+        // Create a new subscription if none exists
+        $subscription = Subscription::create([
+            'customer' => $user->stripe_customer_id,
+            'items' => [['price' => env('STRIPE_PLAN_ID')]],
+            'payment_behavior' => 'default_incomplete',
+            'expand' => ['latest_invoice.payment_intent'],
+        ]);
 
-            // Retrieve the PaymentIntent client_secret
+        if (isset($subscription->latest_invoice)) {
             $paymentIntent = $subscription->latest_invoice->payment_intent;
+
+            // Store the new subscription in your local database
             SubscriptionProvider::create([
-                'user_id' => \Auth::user()->id,
+                'user_id' => $user->id,
                 'stripe_subscription_id' => $subscription->id,
+                'status' => $subscription->status,
             ]);
+
+            // Return response with subscription ID and payment intent
             return $this->sendResponse(
                 [
                     'subscription_id' => $subscription->id,
                     'payment_intent_client_secret' => $paymentIntent->client_secret,
                 ],
-                'Subscription started, awaiting payment method.',
+                'Subscription created, awaiting payment method.'
             );
-
-
-        } catch (\Exception $e) {
-            return $this->sendError('Server Error', $e->getMessage(), 500);
+        } else {
+            return $this->sendError('Subscription Error', 'No latest invoice found after creating the subscription.');
         }
 
+    } catch (\Exception $e) {
+        return $this->sendError('Server Error', $e->getMessage(), 500);
     }
+}
+
+
+
 
 
 }
