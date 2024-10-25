@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //Payment Methods
     Route::post('payment-method', [PaymentController::class, 'createPaymentMethod']);
     Route::get('payment-methods', [PaymentController::class, 'getUserPaymentMethods']);
+    Route::get('delete-payment-method', [PaymentController::class, 'removePaymentMethod']);
 
 
     // Payment

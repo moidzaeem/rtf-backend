@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Models\Booking;
 use App\Models\Notification;
 use App\Models\PaymentLog;
+use App\Models\PaymentMethod as LocalPaymentMethod;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -243,7 +244,7 @@ class PaymentController extends BaseController
                 'client_secret' => $setupIntent->client_secret,
             ];
 
-            return $this->sendResponse( $data, 'Client secret retrieved successfully.');
+            return $this->sendResponse($data, 'Client secret retrieved successfully.');
 
         } catch (\Exception $e) {
             return $this->sendError('Server Error', $e->getMessage());
@@ -280,6 +281,32 @@ class PaymentController extends BaseController
 
         } catch (\TaxJar\Exception $e) {
             return $this->sendError('TaxJar API Error', [$e->getMessage()], 500);
+        }
+    }
+
+    public function removePaymentMethod(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'payment_method_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error', $validator->errors());
+        }
+
+        try {
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+            // Detach the payment method
+            $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
+            $paymentMethod->detach();
+
+            LocalPaymentMethod::where('stripe_payment_method_id', $request->payment_method_id)->delete();
+
+
+            return $this->sendResponse([], 'Payment method removed');
+        } catch (\Exception $e) {
+            return $this->sendError('Server Error', $e->getMessage());
         }
     }
 
