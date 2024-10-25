@@ -79,7 +79,7 @@ class SimpleController extends BaseController
         $sig_header = $request->header('Stripe-Signature');
 
         try {
-            Stripe::setApiKey(apiKey: env('STRIPE_SECRET'));
+            Stripe::setApiKey(env('STRIPE_SECRET'));
 
             // Verify the webhook signature
             $event = \Stripe\Webhook::constructEvent(
