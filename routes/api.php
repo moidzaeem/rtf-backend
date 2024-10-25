@@ -83,6 +83,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user-notifications', [NotificationController::class, 'index']);
     Route::get('/user-notifications-read-all', [NotificationController::class, 'markAllAsRead']);
 
+
+    // Provider Subscription 
+
+    Route::get('/provider-subscription-subscribe', [PaymentController::class, 'createProviderSubscriptions']);
     
 
 });

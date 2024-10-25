@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Notification;
 use App\Models\PaymentLog;
 use App\Models\PaymentMethod as LocalPaymentMethod;
+use App\Models\SubscriptionProvider;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,7 @@ use Stripe\SetupIntent;
 use Stripe\Stripe;
 use TaxJar;
 use Validator;
+use Stripe\Subscription;
 
 class PaymentController extends BaseController
 {
@@ -296,7 +298,7 @@ class PaymentController extends BaseController
         }
 
         try {
-            Stripe::setApiKey(env('STRIPE_SECRET'));
+            Stripe::setApiKey( env('STRIPE_SECRET'));
             // Detach the payment method
             $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
             $paymentMethod->detach();
@@ -308,6 +310,51 @@ class PaymentController extends BaseController
         } catch (\Exception $e) {
             return $this->sendError('Server Error', $e->getMessage());
         }
+    }
+
+    public function createProviderSubscriptions()
+    {
+        $user = Auth::user();
+        if ($user->role !== 'provider') {
+            return $this->sendError('Role Error', 'This is for providers only');
+        }
+        try {
+            Stripe::setApiKey( env('STRIPE_SECRET'));
+            // Ensure the user has a Stripe customer ID
+            if (!$user->stripe_customer_id) {
+                $customer = Customer::create([
+                    'email' => $user->email,
+                ]);
+                $user->update(['stripe_customer_id' => $customer->id]);
+            }
+
+            // Create a subscription in "incomplete" status without requiring payment
+            $subscription = Subscription::create([
+                'customer' => $user->stripe_customer_id,
+                'items' => [['price' => env('STRIPE_PLAN_ID')]],
+                'payment_behavior' => 'default_incomplete',
+                'expand' => ['latest_invoice.payment_intent'],
+            ]);
+
+            // Retrieve the PaymentIntent client_secret
+            $paymentIntent = $subscription->latest_invoice->payment_intent;
+            SubscriptionProvider::create([
+                'user_id' => \Auth::user()->id,
+                'stripe_subscription_id' => $subscription->id,
+            ]);
+            return $this->sendResponse(
+                [
+                    'subscription_id' => $subscription->id,
+                    'payment_intent_client_secret' => $paymentIntent->client_secret,
+                ],
+                'Subscription started, awaiting payment method.',
+            );
+
+
+        } catch (\Exception $e) {
+            return $this->sendError('Server Error', $e->getMessage(), 500);
+        }
+
     }
 
 

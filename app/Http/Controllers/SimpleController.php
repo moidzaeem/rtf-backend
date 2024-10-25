@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\API\BaseController;
+use App\Models\SubscriptionProvider;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use Stripe\Stripe;
+use Stripe\Subscription;
 
 class SimpleController extends BaseController
 {
@@ -110,6 +113,29 @@ class SimpleController extends BaseController
                     ]);
                 } else {
                     \Log::info('User not found for Stripe customer ID: ' . $stripeCustomerId);
+                }
+            } elseif ($event->type === 'invoice.payment_succeeded') {
+                $invoice = $event->data->object; // Contains the invoice details
+
+                // Check the subscription status
+                if ($invoice->status === 'paid') {
+                    $subscriptionId = $invoice->subscription;
+                    $localSubscription = SubscriptionProvider::where('stripe_subscription_id', $subscriptionId)->first();
+                    if ($localSubscription) {
+                        $localSubscription->status = 'active';
+                        $localSubscription->save();
+                    }
+                }
+            } elseif ($event->type === 'customer.subscription.updated') {
+                $subscriptionData = $event->data->object; // This contains the Setup Intent details
+                $subscriptionId = $subscriptionData->id;
+                $currentPeriodStartDate = Carbon::createFromTimestamp($subscriptionData->current_period_start);
+                $currentPeriodEndDate = Carbon::createFromTimestamp($subscriptionData->current_period_end);
+
+                $localSubscription = SubscriptionProvider::where('stripe_subscription_id', $subscriptionData->id)->first();
+                if ($localSubscription) {
+                    $localSubscription->start_date = $currentPeriodStartDate->toDateString();
+                    $localSubscription->end_date = $currentPeriodEndDate->toDateString();
                 }
             }
 
