@@ -42,4 +42,11 @@ class ProviderService extends Model
     public function products(){
         return $this->hasMany(Product::class);
     }
+
+    public function bookings()
+{
+    return $this->hasMany(Booking::class, 'provider_service_id');
+}
+
+    
 }

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Models\Booking;
 use App\Models\ProviderDetail;
+use App\Models\ProviderService;
 use App\Models\User;
+use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Storage;
@@ -18,11 +21,12 @@ class ProviderDetailController extends BaseController
             'dob' => 'required|date|before:today',
             'address' => 'required|string|max:255',
             'city' => 'string|max:100',
-            'country'=>'required',
+            'country' => 'required',
             'postal_code' => 'nullable|string|max:20',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'id_card' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'bg_image'=>'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'bg_image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'state' => 'nullable|string|max:20',
         ]);
 
         // Return validation errors if any
@@ -41,7 +45,8 @@ class ProviderDetailController extends BaseController
                 'address' => $request->address,
                 'city' => $request->city,
                 'postal_code' => $request->postal_code,
-                'country'=>$request->country
+                'country' => $request->country,
+                'state'=>$request->state
             ];
 
             // Handle profile picture upload
@@ -101,5 +106,100 @@ class ProviderDetailController extends BaseController
             return $this->sendError('Server Error', [$th->getMessage()]);
         }
     }
+
+    public function providerDashboardData()
+    {
+        try {
+            $userId = Auth::id();
+            $providerDetails = ProviderDetail::where('user_id', $userId)->first();
+
+            if (!$providerDetails) {
+                return response()->json(['error' => 'Provider details not found.'], 404);
+            }
+
+            // Total bookings for the provider service
+            $totalBookings = Booking::where('provider_service_id', $providerDetails->id)->count();
+
+            // Total current month sales
+            $totalCurrentMonthSales = Booking::where('provider_service_id', $providerDetails->id)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('payment');
+
+            // Total previous month sales
+            $totalPreviousMonthSales = Booking::where('provider_service_id', $providerDetails->id)
+                ->whereMonth('created_at', now()->subMonth()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('payment');
+
+            // Calculate percentage change
+            $percentageChange = 0;
+            if ($totalPreviousMonthSales > 0) {
+                $percentageChange = (($totalCurrentMonthSales - $totalPreviousMonthSales) / $totalPreviousMonthSales) * 100;
+            }
+
+            // Monthly sales data for the current year
+            $monthlySales = Booking::where('provider_service_id', $providerDetails->id)
+                ->whereYear('created_at', now()->year)
+                ->selectRaw('MONTH(created_at) as month, SUM(payment) as total_sales')
+                ->groupBy('month')
+                ->orderBy('month')
+                ->get();
+
+            // Prepare the data for graph
+            $salesData = [];
+            for ($i = 1; $i <= 12; $i++) {
+                $salesData[date('F', mktime(0, 0, 0, $i, 1))] = 0; // Initialize months
+            }
+
+            foreach ($monthlySales as $sale) {
+                $monthName = date('F', mktime(0, 0, 0, $sale->month, 1));
+                $salesData[$monthName] = $sale->total_sales;
+            }
+
+
+            // Prepare final data for response
+            $data = [
+                'total_bookings' => $totalBookings,
+                'total_current_month_sales' => $totalCurrentMonthSales,
+                'total_previous_month_sales' => $totalPreviousMonthSales,
+                'percentage_change' => $percentageChange,
+                'monthly_sales' => $salesData,
+                'services' => $this->getServicesWithMostOrders()
+            ];
+
+            // Return response with all the dashboard data
+            return $this->sendResponse($data, 'Provider Dashboard Details');
+        } catch (\Throwable $th) {
+            return $this->sendError('Server Error', [$th->getMessage()]);
+        }
+    }
+
+    public function getServicesWithMostOrders()
+    {
+        try {
+            $userId = Auth::id();
+            $providerDetails = ProviderDetail::where('user_id', $userId)->first();
+
+            if (!$providerDetails) {
+                return response()->json(['error' => 'Provider details not found.'], 404);
+            }
+
+            // Retrieve all services with the count of bookings
+            return ProviderService::withCount(['bookings', 'ratings']) // Count total bookings and ratings
+            ->withAvg('ratings', 'rating') // Calculate average rating
+            ->where('user_id', $userId)
+            ->orderBy('bookings_count', 'desc') // Order by the count of bookings
+            ->get();
+
+        } catch (\Throwable $th) {
+            return [];
+        }
+    }
+
+    
+
+
+
 
 }

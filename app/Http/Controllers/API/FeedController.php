@@ -10,7 +10,7 @@ class FeedController extends BaseController
 
     public function randomFeeds(Request $request)
     {
-        $count = $request->query('count', 5); // Default to 5 if not provided
+        $count = $request->query('count', 25); // Default to 25 if not provided
         $serviceId = $request->query('service_id');
         try {
             // Build the query for fetching random media
@@ -22,6 +22,8 @@ class FeedController extends BaseController
                     $query->where('id', $serviceId);
                 });
             }
+
+            $query->where('is_approved', true);
 
             // Fetch random media with related provider service details
             $feeds = $query->inRandomOrder()->take($count)->get();

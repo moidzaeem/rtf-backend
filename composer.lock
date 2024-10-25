@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "84063b55ee66f513870390534fb8f3c8",
+    "content-hash": "df545c4bf9367b3e2ea64c86f6d901ff",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3893,6 +3893,47 @@
             "time": "2024-04-27T21:32:50+00:00"
         },
         {
+            "name": "sightengine/client-php",
+            "version": "1.3.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Sightengine/client-php.git",
+                "reference": "52253f61ed36a05d03fa15bfd79141c55929845d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Sightengine/client-php/zipball/52253f61ed36a05d03fa15bfd79141c55929845d",
+                "reference": "52253f61ed36a05d03fa15bfd79141c55929845d",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "~7.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Sightengine\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "Sightengine Team",
+                    "homepage": "https://sightengine.com"
+                }
+            ],
+            "description": "Sightengine PHP client",
+            "homepage": "https://sightengine.com",
+            "support": {
+                "issues": "https://github.com/Sightengine/client-php/issues",
+                "source": "https://github.com/Sightengine/client-php/tree/1.3.1"
+            },
+            "time": "2022-09-08T20:56:32+00:00"
+        },
+        {
             "name": "stripe/stripe-php",
             "version": "v16.1.0",
             "source": {
@@ -6176,6 +6217,56 @@
                 }
             ],
             "time": "2024-09-16T10:07:02+00:00"
+        },
+        {
+            "name": "taxjar/taxjar-php",
+            "version": "v2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/taxjar/taxjar-php.git",
+                "reference": "e3d75d561bf76e7891b2d4ab437596789c1b3a73"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/taxjar/taxjar-php/zipball/e3d75d561bf76e7891b2d4ab437596789c1b3a73",
+                "reference": "e3d75d561bf76e7891b2d4ab437596789c1b3a73",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "guzzlehttp/guzzle": "^7.2",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TaxJar\\": "lib/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "TaxJar"
+                }
+            ],
+            "description": "Sales Tax API Client for PHP 8.0+",
+            "homepage": "https://www.taxjar.com/",
+            "keywords": [
+                "api",
+                "sales tax",
+                "taxjar"
+            ],
+            "support": {
+                "issues": "https://github.com/taxjar/taxjar-php/issues",
+                "source": "https://github.com/taxjar/taxjar-php/tree/v2.0.0"
+            },
+            "time": "2022-10-03T21:16:09+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",

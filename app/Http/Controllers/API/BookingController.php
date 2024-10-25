@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Validator;
+use Stripe\StripeClient;
+
 class BookingController extends BaseController
 {
     public function booking(Request $request)
@@ -50,6 +52,7 @@ class BookingController extends BaseController
                 'booking_date' => $request->booking_date,
                 'booking_time' => $request->booking_time,
                 'payment_status' => 'pending', // Set initial payment staatus
+                'tax_amount' => $request->tax_amount ?? '0',
                 'payment' => $request->payment
             ]);
 
@@ -69,23 +72,58 @@ class BookingController extends BaseController
                 return $product->price * $product->pivot->quantity; // Assuming you have a 'price' attribute in your Product model
             });
 
+            // Get tax amount from request and convert to float
+            $taxAmount = floatval($request->tax_amount ?? '0'); // Convert string to float
+            $totalAmount += $taxAmount;
+
             // Charge the user
-            Stripe::setApiKey(apiKey: env('STRIPE_SECRET'));
+            Stripe::setApiKey(env('STRIPE_SECRET'));
             $user = User::findOrFail(Auth::id());
 
             // Ensure the user has a valid payment method
             if (empty($user->stripe_customer_id)) {
                 return $this->sendError('Customer not found. Please add a payment method first.');
             }
+            // $stripe = new StripeClient(env('STRIPE_SECRET'));
 
+            // $stripeTax = $stripe->tax->calculations->create([
+            //     'currency' => 'usd',
+            //     'customer_details' => [
+            //         'address' => [
+            //             'line1' => '920 5th Ave',
+            //             'city' => 'Alpharetta',
+            //             'state' => 'GA',
+            //             'postal_code' => '30005',
+            //             'country' => 'US',
+            //         ],
+            //         'address_source' => 'billing',
+            //     ],
+            //     'line_items' => [
+            //         [
+            //             'amount' => $totalAmount * 100,
+            //             'reference' => 'Services',
+            //         ],
+            //     ],
+            //     'shipping_cost' => ['amount' => 0],
+            //     'expand' => ['line_items'],
+
+            // ]);
+            // \Log::info($stripeTax);
             $paymentIntent = PaymentIntent::create([
                 'amount' => $totalAmount * 100, // Amount in cents
                 'currency' => 'USD',
                 'customer' => $user->stripe_customer_id,
                 'payment_method' => $request->payment_method_id,
+                // ['metadata' => ['tax_transaction' => $stripeTax['id']]],
                 'off_session' => true,
                 'confirm' => true,
             ]);
+
+            // $stripe->tax->transactions->createFromCalculation([
+            //     'calculation' => $stripeTax['id'],
+            //     'reference' => $paymentIntent['id'],
+            //     'expand' => ['line_items'],
+            // ]);
 
             // Update booking payment status
             $booking->payment_status = 'paid';
@@ -95,9 +133,9 @@ class BookingController extends BaseController
             // Update provider's wallet
             $provider = $booking->providerService->user; // Get the provider associated with the booking
             if (!$provider->wallet) {
-                $provider->wallet()->create(['balance' => $totalAmount]); // Create a wallet if it doesn't exist
+                $provider->wallet()->create(['balance' => $totalAmount-$taxAmount]); // Create a wallet if it doesn't exist
             } else {
-                $provider->wallet->balance += $totalAmount; // Increment wallet balance
+                $provider->wallet->balance += $totalAmount-$taxAmount; // Increment wallet balance
                 $provider->wallet->save();
             }
 
@@ -140,24 +178,23 @@ class BookingController extends BaseController
 
         try {
             $now = now();
-
-            // Fetch all bookings in a single query with eager loading
             $bookings = Booking::where('user_id', $userId)
                 ->with(['products', 'providerService'])
-                ->get();
+                ->get()
+                ->sortByDesc('booking_date'); // Sort bookings by booking_date descending;
 
             // Split bookings into upcoming and past
             $upcomingBookings = $bookings->filter(function ($booking) use ($now) {
                 return $booking->booking_date > $now;
-            })->values()->toArray(); // Use values() to reindex the array
+            })->values()->toArray();
 
             $pastBookings = $bookings->filter(function ($booking) use ($now) {
                 return $booking->booking_date <= $now;
-            })->values()->toArray(); // Use values() to reindex the array
+            })->values()->toArray();
 
             return $this->sendResponse([
-                'upcoming' => $upcomingBookings, // Now an indexed array
-                'past' => $pastBookings, // Also an indexed array
+                'upcoming' => $upcomingBookings,
+                'past' => $pastBookings,
             ], 'User Bookings');
         } catch (\Throwable $th) {
             \Log::error('Error retrieving user bookings: ' . $th->getMessage(), [
@@ -232,6 +269,7 @@ class BookingController extends BaseController
             $responseData = [
                 'id' => $booking->id,
                 'booking_date' => $booking->booking_date,
+                'name' => $booking->providerService->user->name,
                 'booking_time' => $booking->booking_time,
                 'payment_status' => $booking->payment_status,
                 'payment' => $booking->payment,

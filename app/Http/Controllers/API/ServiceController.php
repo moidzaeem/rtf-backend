@@ -18,7 +18,7 @@ class ServiceController extends BaseController
     public function getAllServices()
     {
         try {
-            $services = Service::where('is_active', operator: true)->with('specialities')->get();
+            $services = Service::where('is_active', true)->with('specialities')->get();
             return $this->sendResponse($services, 'All services');
         } catch (\Throwable $th) {
             return $this->sendError('Server Error', $th->getMessage());
@@ -61,7 +61,7 @@ class ServiceController extends BaseController
                 ]);
             }
 
-            return $this->sendResponse($providerService, ['Service added successfully']);
+            return $this->sendResponse($providerService, 'Service added successfully');
 
 
         } catch (\Throwable $th) {
@@ -76,7 +76,7 @@ class ServiceController extends BaseController
     {
         $validator = Validator::make($request->all(), [
             'provider_service_id' => 'required|exists:provider_services,id',
-            'display_image'=>'file|mimes:jpeg,png,jpg,gif,svg',
+            'display_image' => 'file|mimes:jpeg,png,jpg,gif,svg',
             'media' => 'required|array',
             'media.*' => 'file|mimes:jpeg,png,jpg,gif,svg,mp4,mov,avi', // Allowing video files and increasing size limit
         ]);
@@ -90,12 +90,12 @@ class ServiceController extends BaseController
                 // Handle media file uploads
                 $mediaFiles = $request->file('media');
                 $mediaUrls = []; // Array to hold URLs of uploaded media
-        
+
                 foreach ($mediaFiles as $mediaFile) {
                     // Store the media file and set its visibility
                     $mediaPath = $mediaFile->store('rtf/providers/media', 'do');
                     Storage::disk('do')->setVisibility($mediaPath, 'public');
-        
+
                     // Create the ServiceMedia record and store URL
                     $mediaUrls[] = Storage::disk('do')->url($mediaPath);
                     ServiceMedia::create([
@@ -104,13 +104,13 @@ class ServiceController extends BaseController
                         'user_id' => Auth::id(),
                     ]);
                 }
-        
+
                 // Handle display image upload
                 $displayImageFile = $request->file('display_image'); // Assuming display_image is uploaded separately
                 if ($displayImageFile) {
                     $displayImagePath = $displayImageFile->store('rtf/providers/media/services/dp', 'do');
                     Storage::disk('do')->setVisibility($displayImagePath, 'public');
-        
+
                     // Update provider service display image
                     $providerService = ProviderService::find($request->provider_service_id);
                     if ($providerService) {
@@ -118,7 +118,7 @@ class ServiceController extends BaseController
                         $providerService->save();
                     }
                 }
-        
+
                 return $this->sendResponse($mediaUrls, 'Media uploaded successfully');
             } catch (\Exception $e) {
                 // Handle the error
@@ -133,51 +133,55 @@ class ServiceController extends BaseController
     {
         // Validate the request data
         $validator = Validator::make($request->all(), [
-            'day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-            'start_time' => 'required|date_format:H:i',
-            'close_time' => 'required|date_format:H:i|after:start_time',
-            'provider_service_id' => 'required|exists:provider_services,id',
-            'is_open'=>'required|boolean'
+            'timings' => 'required|array',
+            'timings.*.day' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+            'timings.*.start_time' => 'required|date_format:H:i',
+            'timings.*.close_time' => 'required|date_format:H:i|after:timings.*.start_time',
+            'timings.*.provider_service_id' => 'required|exists:provider_services,id',
+            'timings.*.is_open' => 'required|boolean',
         ]);
-
+    
         if ($validator->fails()) {
             return $this->sendError('Validation Error', $validator->errors());
         }
-
+    
+        $responses = [];
+    
         try {
-
-            // Find the existing opening hour entry
-            $openingHour = OpeningHour::where('day', $request->day)
-                ->where('provider_service_id', $request->provider_service_id)
-                ->first();
-
-            if ($openingHour) {
-                // Update the existing entry
-                $openingHour->update([
-                    'start_time' => $request->start_time,
-                    'close_time' => $request->close_time,
-                    'is_open'=>$request->is_open
-                ]);
-                return $this->sendResponse($openingHour, message: 'Service timing updated successfully!');
-
-            } else {
-                // Create a new opening hour entry
-                $openingHour = OpeningHour::create([
-                    'day' => $request->day,
-                    'start_time' => $request->start_time,
-                    'close_time' => $request->close_time,
-                    'provider_service_id' => $request->provider_service_id,
-                    'is_open'=>$request->is_open
-                ]);
-
-                return $this->sendResponse($openingHour, message: 'Service timing added successfully!');
-
+            foreach ($request->timings as $timing) {
+                // Find the existing opening hour entry
+                $openingHour = OpeningHour::where('day', $timing['day'])
+                    ->where('provider_service_id', $timing['provider_service_id'])
+                    ->first();
+    
+                if ($openingHour) {
+                    // Update the existing entry
+                    $openingHour->update([
+                        'start_time' => $timing['start_time'],
+                        'close_time' => $timing['close_time'],
+                        'is_open' => $timing['is_open'],
+                    ]);
+                    $responses[] = ['id' => $openingHour->id, 'message' => 'Service timing updated successfully!'];
+                } else {
+                    // Create a new opening hour entry
+                    $openingHour = OpeningHour::create([
+                        'day' => $timing['day'],
+                        'start_time' => $timing['start_time'],
+                        'close_time' => $timing['close_time'],
+                        'provider_service_id' => $timing['provider_service_id'],
+                        'is_open' => $timing['is_open'],
+                    ]);
+                    $responses[] = ['id' => $openingHour->id, 'message' => 'Service timing added successfully!'];
+                }
             }
+    
+            return $this->sendResponse($responses, message: 'All service timings processed successfully!');
+    
         } catch (\Throwable $th) {
             return $this->sendError('Server error.', $th->getMessage());
-
         }
     }
+    
 
 
 }

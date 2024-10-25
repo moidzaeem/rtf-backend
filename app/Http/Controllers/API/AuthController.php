@@ -65,6 +65,7 @@ class AuthController extends BaseController
             \Log::info('Email Sent');
             $success['token'] = $user->createToken('MyApp')->plainTextToken;
             $success['name'] = $user->name;
+            $success['user'] = $user;
 
             Stripe::setApiKey(env('STRIPE_SECRET'));
             // Create a Stripe customer

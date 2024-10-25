@@ -24,6 +24,6 @@ class Booking extends Model
     }
 
     public function providerService(){
-        return $this->belongsTo(ProviderService::class)->with('user');
+        return $this->belongsTo(ProviderService::class)->with(['user']);
     }
 }

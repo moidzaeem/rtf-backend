@@ -13,6 +13,7 @@ use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 use Stripe\SetupIntent;
 use Stripe\Stripe;
+use TaxJar;
 use Validator;
 
 class PaymentController extends BaseController
@@ -230,24 +231,56 @@ class PaymentController extends BaseController
                 $user->stripe_customer_id = $customer->id;
                 $user->save();
             }
-        
+
             // Create a SetupIntent
             $setupIntent = SetupIntent::create([
                 'payment_method_types' => ['card'], // Specify payment method types
                 'customer' => $user->stripe_customer_id, // Attach the customer ID
             ]);
-            
+
             // Properly create the data array
             $data = [
                 'client_secret' => $setupIntent->client_secret,
             ];
-        
-            return $this->sendResponse($data, 'Client secret retrieved successfully.');
-        
+
+            return $this->sendResponse( $data, 'Client secret retrieved successfully.');
+
         } catch (\Exception $e) {
             return $this->sendError('Server Error', $e->getMessage());
         }
-        
+
+    }
+
+    public function calculateTax(Request $request)
+    {
+        $amount = $request->input('amount'); // Amount before tax
+        $zip = $request->input('zip'); // Destination ZIP code
+        $state = $request->input('state'); // Optional state
+
+        // Initialize the TaxJar client
+        $client = new TaxJar\Client('12f81937edc370f68b962bf4381dc88e');
+
+        // Prepare parameters for the tax calculation
+        $params = [
+            'amount' => $amount,
+            'shipping' => 0, // Include shipping amount if applicable
+            'to_zip' => $zip,
+            'to_country' => 'US', // Default country
+        ];
+
+        if ($state) {
+            $params['to_state'] = $state;
+        }
+
+        try {
+            // Calculate the tax
+            $taxData = $client->taxForOrder($params);
+
+            return $this->sendResponse($taxData, 'Tax caclulated');
+
+        } catch (\TaxJar\Exception $e) {
+            return $this->sendError('TaxJar API Error', [$e->getMessage()], 500);
+        }
     }
 
 

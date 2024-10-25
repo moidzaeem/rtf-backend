@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('verify-email/{token}', [SimpleController::class, 'verifyEmail']);
 
 Route::post('google-login', [SimpleController::class, 'requestTokenGoogle']);
+Route::post('calculate-tax', [PaymentController::class, 'calculateTax']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -26,11 +27,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('services', [ServiceController::class, 'getAllServices']);
 
     Route::post('provider/add-service', [ServiceController::class, 'addServiceToProvider']);
-    Route::post('provider/add-service-media', action: [ServiceController::class, 'addServiceMedia']);
-    Route::post('provider/add-service-time', action: [ServiceController::class, 'addServiceTiming']);
+    Route::post('provider/add-service-media', [ServiceController::class, 'addServiceMedia']);
+    Route::post('provider/add-service-time', [ServiceController::class, 'addServiceTiming']);
 
     // rate-service
-    Route::post('provider/rate-service', action: [RatingController::class, 'rateService']);
+    Route::post('provider/rate-service', [RatingController::class, 'rateService']);
 
     // add -product
 
@@ -41,7 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('booking', [BookingController::class, 'booking']);
     Route::get('bookings', [BookingController::class, 'getUserBookings']);
     Route::post('cancel-booking',[BookingController::class, 'cancelBooking']);
- 
+    Route::get('receipt',[BookingController::class, 'receipt']);
+
     //Payment Methods
     Route::post('payment-method', [PaymentController::class, 'createPaymentMethod']);
     Route::get('payment-methods', [PaymentController::class, 'getUserPaymentMethods']);
@@ -52,6 +54,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('payments-history', [PaymentController::class, 'getUserPaymentHistory']);
     Route::get('/create-setup-intent', [PaymentController::class, 'createSetupIntent']);
 
+
+    // Proivder App data
+
+    Route::get('provider-dashboard-data', [ProviderDetailController::class,'providerDashboardData']);
 
 
 
@@ -74,13 +80,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //Notifications
     Route::get('/user-notifications', [NotificationController::class, 'index']);
-    Route::get('/user-notifications-read-all', [NotificationController::class, 'markAllAsRead ']);
+    Route::get('/user-notifications-read-all', [NotificationController::class, 'markAllAsRead']);
 
     
 
 });
 
-Route::get('feeds', action: [FeedController::class, 'randomFeeds']);
+Route::get('feeds', [FeedController::class, 'randomFeeds']);
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('register', 'register');
