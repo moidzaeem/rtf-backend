@@ -62,4 +62,37 @@ class ProductController extends BaseController
         }
 
     }
+
+    public function deleteProduct(Request $request)
+    {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|exists:products,id', // Ensure the ID is provided and exists
+            'provider_service_id' => 'required|exists:provider_services,id', // Ensure the provider service ID is valid
+        ]);
+
+        // Return validation errors if any
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error', $validator->errors());
+        }
+
+        try {
+            // Find the product
+            $product = Product::findOrFail($request->product_id);
+
+            // Check if the product belongs to the provider service of the authenticated user
+            if ($product->provider_service_id !== $request->provider_service_id) {
+                return $this->sendError('Unauthorized', 'You are not authorized to delete this product.');
+            }
+
+            // Delete the product
+            $product->delete();
+
+            return $this->sendResponse([], 'Product deleted successfully.');
+
+        } catch (\Throwable $th) {
+            return $this->sendError('Server Error', $th->getMessage());
+        }
+    }
+
 }

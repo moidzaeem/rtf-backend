@@ -92,7 +92,7 @@ class ProviderDetailController extends BaseController
 
         try {
             $data = User::where('id', $providerId)
-                ->with(['providerDetails:id,user_id,dob,address,city,postal_code,country,bg_image', 'providerService:id,user_id,service_id,description,price,is_active,display_image'])
+                ->with(['providerDetails:id,user_id,dob,address,city,postal_code,country,bg_image,state', 'providerService:id,user_id,service_id,description,price,is_active,display_image'])
                 ->select('id', 'name', 'email', 'phone_no', 'role') // Select only useful fields
                 ->first();
 

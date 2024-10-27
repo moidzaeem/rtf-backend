@@ -37,7 +37,9 @@ class ServiceController extends BaseController
             'speciality_ids' => 'array',
             'speciality_ids.*' => 'exists:specialities,id',
             'price' => 'required',
-            'description' => 'sometimes|string|max:255' // Optional max length
+            'description' => 'sometimes|string|max:255', // Optional max length
+            'deposite_type' => 'required',
+            'deposite_amount' => 'sometimes'
         ]);
 
 
@@ -52,6 +54,8 @@ class ServiceController extends BaseController
                 'price' => $request->price,
                 'description' => $request->description,
                 'user_id' => Auth::id(),
+                'deposite_type' => $request->deposite_type,
+                'deposite_percentage' => $request->deposite_amount
             ]);
             foreach ($request->speciality_ids as $key => $value) {
                 ServiceSpeciality::create([
@@ -140,20 +144,20 @@ class ServiceController extends BaseController
             'timings.*.provider_service_id' => 'required|exists:provider_services,id',
             'timings.*.is_open' => 'required|boolean',
         ]);
-    
+
         if ($validator->fails()) {
             return $this->sendError('Validation Error', $validator->errors());
         }
-    
+
         $responses = [];
-    
+
         try {
             foreach ($request->timings as $timing) {
                 // Find the existing opening hour entry
                 $openingHour = OpeningHour::where('day', $timing['day'])
                     ->where('provider_service_id', $timing['provider_service_id'])
                     ->first();
-    
+
                 if ($openingHour) {
                     // Update the existing entry
                     $openingHour->update([
@@ -174,14 +178,43 @@ class ServiceController extends BaseController
                     $responses[] = ['id' => $openingHour->id, 'message' => 'Service timing added successfully!'];
                 }
             }
-    
+
             return $this->sendResponse($responses, message: 'All service timings processed successfully!');
+
+        } catch (\Throwable $th) {
+            return $this->sendError('Server error.', $th->getMessage());
+        }
+    }
+
+    public function destroy(Request $request)
+    {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'provider_service_id' => 'required|exists:provider_services,id', // Ensure the ID is provided and exists
+        ]);
+    
+        if ($validator->fails()) {
+            return $this->sendError('Validation Error', $validator->errors());
+        }
+    
+        try {
+            $providerService = ProviderService::findOrFail($request->provider_service_id);
+    
+            // Check if the authenticated user is the owner of the provider service
+            if ($providerService->user_id !== Auth::id()) {
+                return $this->sendError('Unauthorized', 'You are not authorized to delete this provider service.');
+            }
+    
+            $providerService->delete();
+            return $this->sendResponse([], message: 'Provider Service Deleted Successfully');
     
         } catch (\Throwable $th) {
             return $this->sendError('Server error.', $th->getMessage());
         }
     }
     
+    
+
 
 
 }

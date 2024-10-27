@@ -30,12 +30,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('provider/add-service-media', [ServiceController::class, 'addServiceMedia']);
     Route::post('provider/add-service-time', [ServiceController::class, 'addServiceTiming']);
 
+    Route::delete('provider/provider_service', [ServiceController::class, 'destroy']);
+
     // rate-service
     Route::post('provider/rate-service', [RatingController::class, 'rateService']);
 
     // add -product
 
     Route::post('provider/add-product', [ProductController::class, 'addProductToProviderService']);
+    Route::delete('/provider/product', [ProductController::class, 'deleteProduct']);
+
     Route::get('/get-products', [ProductController::class, 'getServiceProviderProducts']);
 
     //BOOKing
