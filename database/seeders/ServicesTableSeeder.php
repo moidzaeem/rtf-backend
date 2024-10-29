@@ -20,15 +20,11 @@ class ServicesTableSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'Spa',
+                'name' => 'Spa/Massage',
                 'is_active' => true,
             ],
             [
                 'name' => 'Barber',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Salon',
                 'is_active' => true,
             ],
         ];
