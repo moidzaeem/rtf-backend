@@ -7,6 +7,7 @@ use App\Models\BookingHistory;
 use App\Models\Notification;
 use App\Models\PaymentLog;
 use App\Models\ProviderService;
+use App\Models\Transaction;
 use App\Models\User;
 use Auth;
 use DB;
@@ -126,6 +127,12 @@ class BookingController extends BaseController
                 $booking->payment = $totalAmount; // Store the payment amount in the booking
                 $booking->save();
 
+                //this is for provider only
+                Transaction::create([
+                    'user_id' => $provider->id,
+                    'amount' => $totalAmount,
+                    'type' => 'deposit',
+                ]);
                 // Update provider's wallet
                 $provider = $booking->providerService->user; // Get the provider associated with the booking
 

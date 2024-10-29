@@ -10,6 +10,7 @@ use App\Http\Controllers\API\ProviderDetailController;
 use App\Http\Controllers\API\RatingController;
 use App\Http\Controllers\API\ServiceController;
 use App\Http\Controllers\API\UserProfileController;
+use App\Http\Controllers\API\WalletController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SimpleController;
 use Illuminate\Http\Request;
@@ -22,6 +23,10 @@ Route::post('calculate-tax', [PaymentController::class, 'calculateTax']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
+    //Wallet
+    Route::post('/withdraw', [WalletController::class, 'withdraw']);
+
+
     // Serivices
 
     Route::get('services', [ServiceController::class, 'getAllServices']);

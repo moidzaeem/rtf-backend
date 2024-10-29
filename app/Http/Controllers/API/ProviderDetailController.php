@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\ProviderDetail;
 use App\Models\ProviderService;
 use App\Models\User;
+use App\Models\Wallet;
 use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class ProviderDetailController extends BaseController
                 'city' => $request->city,
                 'postal_code' => $request->postal_code,
                 'country' => $request->country,
-                'state'=>$request->state
+                'state' => $request->state
             ];
 
             // Handle profile picture upload
@@ -92,7 +93,7 @@ class ProviderDetailController extends BaseController
 
         try {
             $data = User::where('id', $providerId)
-                ->with(['providerDetails:id,user_id,dob,address,city,postal_code,country,bg_image,state', 'providerService:id,user_id,service_id,description,price,is_active,display_image'])
+                ->with(['providerDetails:id,user_id,dob,address,city,postal_code,country,bg_image,state', 'providerService:id,user_id,service_id,description,price,is_active,display_image,deposite_type,deposite_percentage'])
                 ->select('id', 'name', 'email', 'phone_no', 'role') // Select only useful fields
                 ->first();
 
@@ -154,9 +155,11 @@ class ProviderDetailController extends BaseController
 
             foreach ($monthlySales as $sale) {
                 $monthName = date('F', mktime(0, 0, 0, $sale->month, 1));
-                $salesData[$monthName] = $sale->total_sales;
+                $salesData[$monthName] = ($sale->total_sales === 0) ? 0.0 : (float) $sale->total_sales * 2;
             }
 
+
+            $wallet = Wallet::where('user_id', Auth::id())->first();
 
             // Prepare final data for response
             $data = [
@@ -165,8 +168,11 @@ class ProviderDetailController extends BaseController
                 'total_previous_month_sales' => $totalPreviousMonthSales,
                 'percentage_change' => $percentageChange,
                 'monthly_sales' => $salesData,
-                'services' => $this->getServicesWithMostOrders()
+                'services' => $this->getServicesWithMostOrders(),
+                'wallet' => $wallet ? $wallet->balance : 0, // or handle it as needed
             ];
+
+
 
             // Return response with all the dashboard data
             return $this->sendResponse($data, 'Provider Dashboard Details');
@@ -187,17 +193,17 @@ class ProviderDetailController extends BaseController
 
             // Retrieve all services with the count of bookings
             return ProviderService::withCount(['bookings', 'ratings']) // Count total bookings and ratings
-            ->withAvg('ratings', 'rating') // Calculate average rating
-            ->where('user_id', $userId)
-            ->orderBy('bookings_count', 'desc') // Order by the count of bookings
-            ->get();
+                ->withAvg('ratings', 'rating') // Calculate average rating
+                ->where('user_id', $userId)
+                ->orderBy('bookings_count', 'desc') // Order by the count of bookings
+                ->get();
 
         } catch (\Throwable $th) {
             return [];
         }
     }
 
-    
+
 
 
 
