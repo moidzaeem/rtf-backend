@@ -11,33 +11,27 @@ class NotificationController extends BaseController
     public function index(Request $request)
     {
         $userId = $request->user()->id;
-        
-        // Get the start and end of the time range
+    
+        // Get the start of today
         $startOfToday = now()->startOfDay();
-        $startOfYesterday = now()->subDay()->startOfDay();
-        $endOfYesterday = now()->subDay()->endOfDay();
-        
-        // Fetch notifications from today and yesterday
+    
+        // Fetch notifications for the user
         $notifications = Notification::where('user_id', $userId)
-            ->where(function ($query) use ($startOfToday, $startOfYesterday, $endOfYesterday) {
-                $query->where('created_at', '>=', $startOfYesterday)
-                      ->where('created_at', '<=', $startOfToday);
-            })
             ->orderBy('created_at', 'desc')
             ->get();
-        
-        // Group notifications by date
-        $groupedNotifications = [
-            'today' => $notifications->filter(function ($notification) use ($startOfToday) {
-                return $notification->created_at >= $startOfToday;
-            }),
-            'yesterday' => $notifications->filter(function ($notification) use ($startOfYesterday, $endOfYesterday) {
-                return $notification->created_at >= $startOfYesterday && $notification->created_at <= $endOfYesterday;
-            }),
-        ];
+    
+            $groupedNotifications = [
+                'today' => $notifications->filter(function ($notification) use ($startOfToday) {
+                    return $notification->created_at >= $startOfToday;
+                }),
+                'yesterday' => $notifications->filter(function ($notification) use ($startOfToday) {
+                    return $notification->created_at < $startOfToday;
+                })->values()->toArray(),
+            ];
     
         return $this->sendResponse($groupedNotifications, 'User Notifications');
     }
+    
     
 
     public function markAllAsRead(Request $request)

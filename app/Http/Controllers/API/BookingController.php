@@ -152,6 +152,12 @@ class BookingController extends BaseController
 
                 Notification::create([
                     'user_id' => $provider->id,
+                    'title' => 'Booking Received',
+                    'message' => "You received a booking "
+                ]);
+
+                Notification::create([
+                    'user_id' => $provider->id,
                     'title' => 'Payment Successful',
                     'message' => "You received a payment of " . ($totalAmount) . " for Booking " . $booking->id
                 ]);

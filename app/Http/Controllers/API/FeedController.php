@@ -34,6 +34,9 @@ class FeedController extends BaseController
             })->map(function ($media) {
                 // Safely access providerService
                 $providerService = $media->providerService;
+                if (!$providerService) {
+                    return null; // Skip this iteration
+                }
             
                 // Safely handle openingHours
                 $openingHours = $providerService && $providerService->openHours

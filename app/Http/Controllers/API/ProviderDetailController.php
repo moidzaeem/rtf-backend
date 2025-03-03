@@ -113,22 +113,23 @@ class ProviderDetailController extends BaseController
         try {
             $userId = Auth::id();
             $providerDetails = ProviderDetail::where('user_id', $userId)->first();
+            $providerService = ProviderService::where('user_id', $userId)->pluck('id');
 
             if (!$providerDetails) {
                 return response()->json(['error' => 'Provider details not found.'], 404);
             }
 
             // Total bookings for the provider service
-            $totalBookings = Booking::where('provider_service_id', $providerDetails->id)->count();
+            $totalBookings = Booking::whereIn('provider_service_id', $providerService)->count();
 
             // Total current month sales
-            $totalCurrentMonthSales = Booking::where('provider_service_id', $providerDetails->id)
+            $totalCurrentMonthSales = Booking::whereIn('provider_service_id', $providerService)
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->sum('payment');
 
             // Total previous month sales
-            $totalPreviousMonthSales = Booking::where('provider_service_id', $providerDetails->id)
+            $totalPreviousMonthSales = Booking::whereIn('provider_service_id', $providerService)
                 ->whereMonth('created_at', now()->subMonth()->month)
                 ->whereYear('created_at', now()->year)
                 ->sum('payment');
@@ -140,7 +141,7 @@ class ProviderDetailController extends BaseController
             }
 
             // Monthly sales data for the current year
-            $monthlySales = Booking::where('provider_service_id', $providerDetails->id)
+            $monthlySales = Booking::whereIn('provider_service_id', $providerService)
                 ->whereYear('created_at', now()->year)
                 ->selectRaw('MONTH(created_at) as month, SUM(payment) as total_sales')
                 ->groupBy('month')
@@ -155,7 +156,7 @@ class ProviderDetailController extends BaseController
 
             foreach ($monthlySales as $sale) {
                 $monthName = date('F', mktime(0, 0, 0, $sale->month, 1));
-                $salesData[$monthName] = ($sale->total_sales === 0) ? 0.0 : (float) $sale->total_sales * 2;
+                $salesData[$monthName] = ($sale->total_sales === 0) ? 0.0 : (float) $sale->total_sales;
             }
 
 
